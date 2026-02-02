@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>脑力训练</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: #f5f1eb;
+      color: #2c2c2c;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .page {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 28px;
+      letter-spacing: 0.05em;
+      color: #3d3d3d;
+    }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: rgba(0,0,0,.04);
+      padding: 4px;
+      border-radius: 10px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px 12px;
+      border: none;
+      background: transparent;
+      font-size: 0.9rem;
+      color: #666;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .tab:hover { color: #2c2c2c; background: rgba(255,255,255,.6); }
+    .tab.active { background: #fff; color: #2c2c2c; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.04);
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      background: #c45c3e;
+      color: #fff;
+      transition: background .2s, transform .05s;
+    }
+    .btn:hover { background: #a84d32; }
+    .btn:active { transform: scale(0.98); }
+    .btn.secondary { background: #6b7b6e; }
+    .btn.secondary:hover { background: #5a6a5d; }
+    .text-muted { color: #888; font-size: 0.9rem; }
+    .mt { margin-top: 16px; }
+    .mb { margin-bottom: 16px; }
+
+    /* 舒尔特表 */
+    .schulte-wrap { text-align: center; }
+    .schulte-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      max-width: 280px;
+      margin: 20px auto;
+    }
+    .schulte-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0ebe3;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+    }
+    .schulte-cell.done { cursor: default; }
+    .schulte-info { margin-top: 12px; font-size: 0.9rem; color: #666; }
+    .schulte-result { margin-top: 12px; font-weight: 500; color: #3d6b4a; }
+
+    /* Stroop */
+    .stroop-word {
+      font-size: 2rem;
+      font-weight: 600;
+      text-align: center;
+      padding: 32px 16px;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .stroop-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .stroop-btns .btn { min-width: 72px; }
+    .stroop-score { text-align: center; margin-top: 16px; color: #666; }
+    .stroop-done { font-size: 1.1rem; font-weight: 500; color: #3d6b4a; margin-top: 12px; }
+
+    /* 序列工作记忆 */
+    .memory-preview {
+      background: #f8f6f2;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .memory-preview h3 { font-size: 0.95rem; color: #555; margin-bottom: 8px; }
+    .memory-preview ul { list-style: none; font-size: 0.9rem; color: #666; }
+    .memory-preview li { padding: 2px 0; }
+    .memory-preview .preview-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .memory-preview .preview-cats span {
+      background: #e8e4de;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .memory-item {
+      font-size: 1.4rem;
+      font-weight: 500;
+      text-align: center;
+      padding: 40px 16px;
+      min-height: 80px;
+      background: #f8f6f2;
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+    .memory-controls { margin-bottom: 20px; }
+    .memory-controls label { margin-right: 12px; color: #666; }
+    .memory-controls select {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 0.95rem;
+      background: #fff;
+    }
+    .memory-recall { display: none; }
+    .memory-recall.active { display: block; }
+    .memory-recall-question { margin-bottom: 12px; font-size: 0.95rem; color: #555; }
+    .memory-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .memory-options .btn { min-width: 80px; }
+    .memory-result { margin-top: 16px; font-weight: 500; }
+    .memory-result.correct { color: #3d6b4a; }
+    .memory-result.wrong { color: #b54a3a; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>脑力训练</h1>
+    <div class="tabs">
+      <button class="tab active" data-panel="schulte">舒尔特表</button>
+      <button class="tab" data-panel="stroop">Stroop 训练</button>
+      <button class="tab" data-panel="memory">序列工作记忆</button>
+    </div>
+
+    <!-- 舒尔特表 -->
+    <section class="panel active" id="schulte">
+      <div class="card">
+        <div class="schulte-wrap">
+          <p class="text-muted">按顺序点击 1 → 25，用时越短越好。</p>
+          <button class="btn mt mb" id="schulte-start">开始</button>
+          <div class="schulte-grid" id="schulte-grid"></div>
+          <div class="schulte-info" id="schulte-info"></div>
+          <div class="schulte-result" id="schulte-result"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stroop 训练 -->
+    <section class="panel" id="stroop">
+      <div class="card">
+        <p class="text-muted mb">请选择文字「实际显示的颜色」，而不是字面意思。每轮随机 8～15 题，题目与颜色随机生成。</p>
+        <div class="stroop-word" id="stroop-word">—</div>
+        <div class="stroop-btns" id="stroop-btns"></div>
+        <div class="stroop-score" id="stroop-score"></div>
+        <div class="stroop-done" id="stroop-done"></div>
+        <button class="btn mt" id="stroop-start" style="display:none;">再来一轮</button>
+      </div>
+    </section>
+
+    <!-- 序列工作记忆 -->
+    <section class="panel" id="memory">
+      <div class="card">
+        <p class="text-muted mb">依次出现物品，请记住每个的「类别」，而不是具体名称。先预览品类，再开始练习。</p>
+        <div class="memory-controls">
+          <label>序列长度</label>
+          <select id="memory-len">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+          </select>
+          <button class="btn mt" id="memory-preview-btn">预览品类</button>
+        </div>
+        <div class="memory-preview" id="memory-preview" style="display:none;"></div>
+        <button class="btn mt" id="memory-start" style="display:none;">开始练习</button>
+        <div class="memory-item" id="memory-item" style="display:none;">—</div>
+        <div class="memory-recall" id="memory-recall"></div>
+        <div class="memory-result" id="memory-result"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // 标签切换
+    document.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById(t.dataset.panel).classList.add('active');
+      });
+    });
+
+    // —————— 舒尔特表 ——————
+    const gridEl = document.getElementById('schulte-grid');
+    const infoEl = document.getElementById('schulte-info');
+    const resultEl = document.getElementById('schulte-result');
+    const startBtn = document.getElementById('schulte-start');
+    let schulteOrder = [];
+    let schulteNext = 1;
+    let schulteTimer = null;
+    let schulteStartTime = 0;
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function renderSchulte() {
+      schulteOrder = shuffle(Array.from({ length: 25 }, (_, i) => i + 1));
+      schulteNext = 1;
+      resultEl.textContent = '';
+      if (schulteTimer) clearInterval(schulteTimer);
+      schulteTimer = null;
+      schulteStartTime = 0;
+      gridEl.innerHTML = schulteOrder.map((n, i) =>
+        `<div class="schulte-cell" data-num="${n}" data-idx="${i}">${n}</div>`
+      ).join('');
+      infoEl.textContent = '点击 1 开始计时';
+      gridEl.querySelectorAll('.schulte-cell').forEach(cell => {
+        cell.addEventListener('click', onSchulteClick);
+      });
+    }
+
+    function onSchulteClick(e) {
+      const num = parseInt(e.currentTarget.dataset.num, 10);
+      if (num !== schulteNext) return;
+      if (schulteNext === 1) {
+        schulteStartTime = Date.now();
+        schulteTimer = setInterval(() => {
+          const s = ((Date.now() - schulteStartTime) / 1000).toFixed(1);
+          infoEl.textContent = `用时 ${s} 秒`;
+        }, 100);
+      }
+      e.currentTarget.classList.add('done');
+      schulteNext++;
+      if (schulteNext > 25) {
+        clearInterval(schulteTimer);
+        const sec = ((Date.now() - schulteStartTime) / 1000).toFixed(1);
+        infoEl.textContent = '';
+        resultEl.textContent = `完成！用时 ${sec} 秒`;
+        startBtn.textContent = '再来一次';
+      }
+    }
+
+    startBtn.addEventListener('click', () => {
+      renderSchulte();
+      startBtn.textContent = '重新开始';
+    });
+
+    // —————— Stroop ——————
+    const colors = [
+      { name: '红', value: '#b54a3a' },
+      { name: '黄', value: '#c9a227' },
+      { name: '橙', value: '#c45c3e' },
+      { name: '绿', value: '#2d7d4a' },
+      { name: '蓝', value: '#2563eb' },
+      { name: '紫', value: '#7c3aed' },
+      { name: '粉', value: '#db2777' },
+      { name: '青', value: '#0891b2' },
+      { name: '棕', value: '#92400e' },
+      { name: '灰', value: '#6b7280' },
+      { name: '黑', value: '#1a1a1a' },
+      { name: '白', value: '#d1d5db' }
+    ];
+    const stroopWordEl = document.getElementById('stroop-word');
+    const stroopBtnsEl = document.getElementById('stroop-btns');
+    const stroopScoreEl = document.getElementById('stroop-score');
+    const stroopDoneEl = document.getElementById('stroop-done');
+    const stroopStartBtn = document.getElementById('stroop-start');
+    let stroopQueue = [];
+    let stroopCorrect = 0;
+    let stroopTotal = 0;
+    let currentStroopItem = null;
+
+    function startStroop() {
+      stroopCorrect = 0;
+      stroopTotal = 8 + Math.floor(Math.random() * 8);
+      stroopDoneEl.textContent = '';
+      stroopStartBtn.style.display = 'none';
+      stroopQueue = [];
+      for (let i = 0; i < stroopTotal; i++) {
+        let wordIdx = Math.floor(Math.random() * colors.length);
+        let colorIdx = Math.floor(Math.random() * colors.length);
+        while (colorIdx === wordIdx && colors.length > 1) colorIdx = Math.floor(Math.random() * colors.length);
+        stroopQueue.push({ word: colors[wordIdx].name, colorIdx, color: colors[colorIdx] });
+      }
+      stroopBtnsEl.innerHTML = colors.map(c =>
+        `<button class="btn secondary" data-name="${c.name}">${c.name}</button>`
+      ).join('');
+      stroopBtnsEl.querySelectorAll('.btn').forEach(b => {
+        b.addEventListener('click', () => answerStroop(b.dataset.name));
+      });
+      nextStroop();
+    }
+
+    function nextStroop() {
+      if (stroopQueue.length === 0) {
+        stroopWordEl.textContent = '';
+        stroopWordEl.style.color = '';
+        currentStroopItem = null;
+        stroopScoreEl.textContent = `得分：${stroopCorrect} / ${stroopTotal}`;
+        stroopDoneEl.textContent = '本轮结束';
+        stroopStartBtn.style.display = 'inline-block';
+        return;
+      }
+      currentStroopItem = stroopQueue.shift();
+      stroopWordEl.textContent = currentStroopItem.word;
+      stroopWordEl.style.color = currentStroopItem.color.value;
+      stroopScoreEl.textContent = `${stroopCorrect} / ${stroopTotal - stroopQueue.length - 1} 题`;
+    }
+
+    function answerStroop(name) {
+      if (currentStroopItem && currentStroopItem.color.name === name) stroopCorrect++;
+      nextStroop();
+    }
+
+    stroopStartBtn.addEventListener('click', startStroop);
+    startStroop();
+
+    // —————— 序列工作记忆 ——————
+    const itemsWithCategory = [
+      { name: '沃尔沃 S60', category: '轿车' },
+      { name: '奔驰 C级', category: '轿车' },
+      { name: '宝马 3系', category: '轿车' },
+      { name: '特斯拉 Model 3', category: '轿车' },
+      { name: '奥迪 A4', category: '轿车' },
+      { name: '丰田凯美瑞', category: '轿车' },
+      { name: '苹果', category: '水果' },
+      { name: '香蕉', category: '水果' },
+      { name: '橙子', category: '水果' },
+      { name: '葡萄', category: '水果' },
+      { name: '西瓜', category: '水果' },
+      { name: '草莓', category: '水果' },
+      { name: '桃子', category: '水果' },
+      { name: '狗', category: '动物' },
+      { name: '猫', category: '动物' },
+      { name: '老虎', category: '动物' },
+      { name: '兔子', category: '动物' },
+      { name: '大象', category: '动物' },
+      { name: '飞机', category: '交通工具' },
+      { name: '高铁', category: '交通工具' },
+      { name: '自行车', category: '交通工具' },
+      { name: '轮船', category: '交通工具' },
+      { name: '摩托车', category: '交通工具' },
+      { name: '桌子', category: '家具' },
+      { name: '椅子', category: '家具' },
+      { name: '沙发', category: '家具' },
+      { name: '书架', category: '家具' },
+      { name: '床', category: '家具' },
+      { name: '钢笔', category: '文具' },
+      { name: '笔记本', category: '文具' },
+      { name: '橡皮', category: '文具' },
+      { name: '尺子', category: '文具' },
+      { name: '剪刀', category: '文具' },
+      { name: '钢琴', category: '乐器' },
+      { name: '吉他', category: '乐器' },
+      { name: '小提琴', category: '乐器' },
+      { name: '鼓', category: '乐器' },
+      { name: '足球', category: '球类' },
+      { name: '篮球', category: '球类' },
+      { name: '乒乓球', category: '球类' },
+      { name: '羽毛球', category: '球类' },
+      { name: '白菜', category: '蔬菜' },
+      { name: '胡萝卜', category: '蔬菜' },
+      { name: '西红柿', category: '蔬菜' },
+      { name: '黄瓜', category: '蔬菜' },
+      { name: '土豆', category: '蔬菜' },
+      { name: '手机', category: '电子产品' },
+      { name: '电脑', category: '电子产品' },
+      { name: '耳机', category: '电子产品' },
+      { name: '手表', category: '电子产品' }
+    ];
+    const memoryItemEl = document.getElementById('memory-item');
+    const memoryRecallEl = document.getElementById('memory-recall');
+    const memoryResultEl = document.getElementById('memory-result');
+    const memoryPreviewEl = document.getElementById('memory-preview');
+    const memoryPreviewBtn = document.getElementById('memory-preview-btn');
+    const memoryStartBtn = document.getElementById('memory-start');
+    let memorySequence = [];
+    let memoryCategories = [];
+    let memoryRecallIndex = 0;
+    const allCategories = [...new Set(itemsWithCategory.map(i => i.category))];
+
+    memoryPreviewBtn.addEventListener('click', () => {
+      const byCat = {};
+      itemsWithCategory.forEach(i => {
+        if (!byCat[i.category]) byCat[i.category] = [];
+        byCat[i.category].push(i.name);
+      });
+      memoryPreviewEl.innerHTML = `
+        <h3>本局可能出现的品类与示例：</h3>
+        <div class="preview-cats">
+          ${allCategories.map(cat => `<span>${cat}</span>`).join('')}
+        </div>
+        <ul style="margin-top:12px;">
+          ${allCategories.map(cat =>
+            `<li><strong>${cat}</strong>：${byCat[cat].slice(0, 5).join('、')}${byCat[cat].length > 5 ? ' 等' : ''}</li>`
+          ).join('')}
+        </ul>
+      `;
+      memoryPreviewEl.style.display = 'block';
+      memoryStartBtn.style.display = 'inline-block';
+    });
+
+    memoryStartBtn.addEventListener('click', () => {
+      const len = parseInt(document.getElementById('memory-len').value, 10);
+      const pool = [...itemsWithCategory];
+      memorySequence = [];
+      memoryCategories = [];
+      while (memorySequence.length < len) {
+        const idx = Math.floor(Math.random() * pool.length);
+        memorySequence.push(pool[idx]);
+        memoryCategories.push(pool[idx].category);
+        pool.splice(idx, 1);
+        if (pool.length === 0) {
+          itemsWithCategory.forEach(i => pool.push(i));
+        }
+      }
+      memoryPreviewEl.style.display = 'none';
+      memoryStartBtn.style.display = 'none';
+      memoryRecallEl.classList.remove('active');
+      memoryRecallEl.innerHTML = '';
+      memoryResultEl.textContent = '';
+      memoryItemEl.style.display = 'flex';
+      memoryRecallIndex = 0;
+      showNextMemoryItem();
+    });
+
+    function showNextMemoryItem() {
+      if (memoryRecallIndex >= memorySequence.length) {
+        memoryItemEl.style.display = 'none';
+        memoryRecallIndex = 0;
+        showRecall();
+        return;
+      }
+      memoryItemEl.textContent = memorySequence[memoryRecallIndex].name;
+      memoryRecallIndex++;
+      setTimeout(showNextMemoryItem, 2000);
+    }
+
+    function showRecall() {
+      memoryRecallEl.classList.add('active');
+      memoryRecallIndex = 0;
+      renderRecallQuestion();
+    }
+
+    function renderRecallQuestion() {
+      memoryResultEl.textContent = '';
+      if (memoryRecallIndex >= memoryCategories.length) {
+        memoryRecallEl.innerHTML = '<p class="stroop-done">回忆完成</p>';
+        return;
+      }
+      const n = memoryRecallIndex + 1;
+      const correct = memoryCategories[memoryRecallIndex];
+      const wrongPool = shuffle(allCategories.filter(c => c !== correct)).slice(0, 3);
+      const options = shuffle([correct, ...wrongPool]);
+      memoryRecallEl.innerHTML = `
+        <p class="memory-recall-question">第 ${n} 个物品的类别是？</p>
+        <div class="memory-options">
+          ${options.map(cat => `<button class="btn secondary" data-cat="${cat}">${cat}</button>`).join('')}
+        </div>
+      `;
+      memoryRecallEl.querySelectorAll('.memory-options .btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const chosen = b.dataset.cat;
+          if (chosen === correct) {
+            memoryResultEl.textContent = '正确';
+            memoryResultEl.className = 'memory-result correct';
+          } else {
+            memoryResultEl.textContent = `错误，正确答案是：${correct}`;
+            memoryResultEl.className = 'memory-result wrong';
+          }
+          memoryRecallIndex++;
+          setTimeout(renderRecallQuestion, 800);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
