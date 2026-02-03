@@ -76,6 +76,31 @@
 
     /* 舒尔特表 */
     .schulte-wrap { text-align: center; }
+    .schulte-next {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #3d3d3d;
+      margin-bottom: 16px;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .schulte-next-number {
+      display: inline-block;
+      padding: 8px 20px;
+      background: #f0ebe3;
+      border-radius: 8px;
+      min-width: 60px;
+    }
+    .schulte-next.shake {
+      animation: shake 0.4s ease-in-out;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+      20%, 40%, 60%, 80% { transform: translateX(8px); }
+    }
     .schulte-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -94,32 +119,33 @@
       font-weight: 500;
       cursor: pointer;
       user-select: none;
+      transition: background .15s;
     }
     .schulte-cell.done { cursor: default; }
+    .schulte-cell.pressed { background: #e8c4b8; }
     .schulte-info { margin-top: 12px; font-size: 0.9rem; color: #666; }
     .schulte-result { margin-top: 12px; font-weight: 500; color: #3d6b4a; }
 
     /* Stroop */
-    .stroop-word {
-      font-size: 2rem;
-      font-weight: 600;
+    .stroop-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+    .stroop-item {
       text-align: center;
-      padding: 32px 16px;
-      min-height: 100px;
+    }
+    .stroop-word {
+      font-size: 1.8rem;
+      font-weight: 600;
+      padding: 24px 12px;
+      min-height: 80px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    .stroop-btns {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 20px;
-    }
-    .stroop-btns .btn { min-width: 72px; }
-    .stroop-score { text-align: center; margin-top: 16px; color: #666; }
-    .stroop-done { font-size: 1.1rem; font-weight: 500; color: #3d6b4a; margin-top: 12px; }
 
     /* 序列工作记忆 */
     .memory-preview {
@@ -188,6 +214,9 @@
         <div class="schulte-wrap">
           <p class="text-muted">按顺序点击 1 → 25，用时越短越好。</p>
           <button class="btn mt mb" id="schulte-start">开始</button>
+          <div class="schulte-next" id="schulte-next">
+            <span>下一个：<span class="schulte-next-number" id="schulte-next-number">—</span></span>
+          </div>
           <div class="schulte-grid" id="schulte-grid"></div>
           <div class="schulte-info" id="schulte-info"></div>
           <div class="schulte-result" id="schulte-result"></div>
@@ -198,12 +227,9 @@
     <!-- Stroop 训练 -->
     <section class="panel" id="stroop">
       <div class="card">
-        <p class="text-muted mb">请选择文字「实际显示的颜色」，而不是字面意思。每轮随机 8～15 题，题目与颜色随机生成。</p>
-        <div class="stroop-word" id="stroop-word">—</div>
-        <div class="stroop-btns" id="stroop-btns"></div>
-        <div class="stroop-score" id="stroop-score"></div>
-        <div class="stroop-done" id="stroop-done"></div>
-        <button class="btn mt" id="stroop-start" style="display:none;">再来一轮</button>
+        <p class="text-muted mb">请识别文字「实际显示的颜色」，而不是字面意思。</p>
+        <button class="btn mb" id="stroop-refresh">刷新题目</button>
+        <div class="stroop-grid" id="stroop-grid"></div>
       </div>
     </section>
 
@@ -247,6 +273,8 @@
     const gridEl = document.getElementById('schulte-grid');
     const infoEl = document.getElementById('schulte-info');
     const resultEl = document.getElementById('schulte-result');
+    const nextNumberEl = document.getElementById('schulte-next-number');
+    const nextEl = document.getElementById('schulte-next');
     const startBtn = document.getElementById('schulte-start');
     let schulteOrder = [];
     let schulteNext = 1;
@@ -262,6 +290,14 @@
       return a;
     }
 
+    function updateNextNumber() {
+      if (schulteNext > 25) {
+        nextNumberEl.textContent = '完成';
+      } else {
+        nextNumberEl.textContent = schulteNext;
+      }
+    }
+
     function renderSchulte() {
       schulteOrder = shuffle(Array.from({ length: 25 }, (_, i) => i + 1));
       schulteNext = 1;
@@ -269,18 +305,45 @@
       if (schulteTimer) clearInterval(schulteTimer);
       schulteTimer = null;
       schulteStartTime = 0;
+      updateNextNumber();
       gridEl.innerHTML = schulteOrder.map((n, i) =>
         `<div class="schulte-cell" data-num="${n}" data-idx="${i}">${n}</div>`
       ).join('');
       infoEl.textContent = '点击 1 开始计时';
       gridEl.querySelectorAll('.schulte-cell').forEach(cell => {
         cell.addEventListener('click', onSchulteClick);
+        cell.addEventListener('mousedown', onSchulteMouseDown);
+        cell.addEventListener('mouseup', onSchulteMouseUp);
+        cell.addEventListener('mouseleave', onSchulteMouseUp);
+        cell.addEventListener('touchstart', onSchulteMouseDown);
+        cell.addEventListener('touchend', onSchulteMouseUp);
+        cell.addEventListener('touchcancel', onSchulteMouseUp);
       });
+    }
+
+    function onSchulteMouseDown(e) {
+      if (!e.currentTarget.classList.contains('done')) {
+        e.currentTarget.classList.add('pressed');
+      }
+    }
+
+    function onSchulteMouseUp(e) {
+      e.currentTarget.classList.remove('pressed');
     }
 
     function onSchulteClick(e) {
       const num = parseInt(e.currentTarget.dataset.num, 10);
-      if (num !== schulteNext) return;
+      if (num !== schulteNext) {
+        // 点击错误，振动提示
+        nextEl.classList.remove('shake');
+        setTimeout(() => {
+          nextEl.classList.add('shake');
+          setTimeout(() => {
+            nextEl.classList.remove('shake');
+          }, 400);
+        }, 10);
+        return;
+      }
       if (schulteNext === 1) {
         schulteStartTime = Date.now();
         schulteTimer = setInterval(() => {
@@ -289,7 +352,9 @@
         }, 100);
       }
       e.currentTarget.classList.add('done');
+      e.currentTarget.classList.remove('pressed');
       schulteNext++;
+      updateNextNumber();
       if (schulteNext > 25) {
         clearInterval(schulteTimer);
         const sec = ((Date.now() - schulteStartTime) / 1000).toFixed(1);
@@ -308,71 +373,51 @@
     const colors = [
       { name: '红', value: '#b54a3a' },
       { name: '黄', value: '#c9a227' },
-      { name: '橙', value: '#c45c3e' },
       { name: '绿', value: '#2d7d4a' },
       { name: '蓝', value: '#2563eb' },
       { name: '紫', value: '#7c3aed' },
-      { name: '粉', value: '#db2777' },
-      { name: '青', value: '#0891b2' },
-      { name: '棕', value: '#92400e' },
-      { name: '灰', value: '#6b7280' },
+      { name: '橙', value: '#c45c3e' },
       { name: '黑', value: '#1a1a1a' },
       { name: '白', value: '#d1d5db' }
     ];
-    const stroopWordEl = document.getElementById('stroop-word');
-    const stroopBtnsEl = document.getElementById('stroop-btns');
-    const stroopScoreEl = document.getElementById('stroop-score');
-    const stroopDoneEl = document.getElementById('stroop-done');
-    const stroopStartBtn = document.getElementById('stroop-start');
-    let stroopQueue = [];
-    let stroopCorrect = 0;
-    let stroopTotal = 0;
-    let currentStroopItem = null;
+    const stroopGridEl = document.getElementById('stroop-grid');
+    const stroopRefreshBtn = document.getElementById('stroop-refresh');
 
-    function startStroop() {
-      stroopCorrect = 0;
-      stroopTotal = 8 + Math.floor(Math.random() * 8);
-      stroopDoneEl.textContent = '';
-      stroopStartBtn.style.display = 'none';
-      stroopQueue = [];
-      for (let i = 0; i < stroopTotal; i++) {
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function renderStroop() {
+      stroopGridEl.innerHTML = '';
+      // 8 题用 8 种不同显示颜色，打乱顺序（颜色不重复）
+      const colorIndices = shuffle(Array.from({ length: colors.length }, (_, i) => i)).slice(0, 8);
+      let lastWord = '';
+      for (let i = 0; i < 8; i++) {
+        const colorIdx = colorIndices[i];
+        const color = colors[colorIdx];
         let wordIdx = Math.floor(Math.random() * colors.length);
-        let colorIdx = Math.floor(Math.random() * colors.length);
-        while (colorIdx === wordIdx && colors.length > 1) colorIdx = Math.floor(Math.random() * colors.length);
-        stroopQueue.push({ word: colors[wordIdx].name, colorIdx, color: colors[colorIdx] });
+        let attempts = 0;
+        // 文字与显示颜色不能相同，且避免相邻题目使用相同的文字
+        while (attempts < 15 && (wordIdx === colorIdx || colors[wordIdx].name === lastWord)) {
+          wordIdx = Math.floor(Math.random() * colors.length);
+          attempts++;
+        }
+        lastWord = colors[wordIdx].name;
+        const word = colors[wordIdx].name;
+        const itemEl = document.createElement('div');
+        itemEl.className = 'stroop-item';
+        itemEl.innerHTML = `<div class="stroop-word" style="color: ${color.value}">${word}</div>`;
+        stroopGridEl.appendChild(itemEl);
       }
-      stroopBtnsEl.innerHTML = colors.map(c =>
-        `<button class="btn secondary" data-name="${c.name}">${c.name}</button>`
-      ).join('');
-      stroopBtnsEl.querySelectorAll('.btn').forEach(b => {
-        b.addEventListener('click', () => answerStroop(b.dataset.name));
-      });
-      nextStroop();
     }
 
-    function nextStroop() {
-      if (stroopQueue.length === 0) {
-        stroopWordEl.textContent = '';
-        stroopWordEl.style.color = '';
-        currentStroopItem = null;
-        stroopScoreEl.textContent = `得分：${stroopCorrect} / ${stroopTotal}`;
-        stroopDoneEl.textContent = '本轮结束';
-        stroopStartBtn.style.display = 'inline-block';
-        return;
-      }
-      currentStroopItem = stroopQueue.shift();
-      stroopWordEl.textContent = currentStroopItem.word;
-      stroopWordEl.style.color = currentStroopItem.color.value;
-      stroopScoreEl.textContent = `${stroopCorrect} / ${stroopTotal - stroopQueue.length - 1} 题`;
-    }
-
-    function answerStroop(name) {
-      if (currentStroopItem && currentStroopItem.color.name === name) stroopCorrect++;
-      nextStroop();
-    }
-
-    stroopStartBtn.addEventListener('click', startStroop);
-    startStroop();
+    stroopRefreshBtn.addEventListener('click', renderStroop);
+    renderStroop();
 
     // —————— 序列工作记忆 ——————
     const itemsWithCategory = [
